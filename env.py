@@ -240,7 +240,7 @@ def simulator(N, T, match_probs, ratio1=0.5, ratio2=0.5, initial_guess=[0.5, 0.5
             
         record_strategy.append(temp_s)
         record_optimal.append(temp_o)
-        record_random.append(temp_o)
+        record_random.append(temp_rand)
 
     
     return record_strategy, record_optimal, record_random
@@ -248,4 +248,4 @@ def simulator(N, T, match_probs, ratio1=0.5, ratio2=0.5, initial_guess=[0.5, 0.5
 # simulator(100, 1000, funcs, [[0.8, 0.2], [0.8, 0.2]], ratio1=0.4, ratio2=0.2, mode=1)    
 
 
-r_s, r_o = simulator(1000, 1000, [[0.6, 0.25], [0.25, 0.5]], 0.5, 0.5)
+# r_s, r_o = simulator(1000, 1000, [[0.6, 0.25], [0.25, 0.5]], 0.5, 0.5)
