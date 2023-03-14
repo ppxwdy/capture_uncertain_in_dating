@@ -58,27 +58,45 @@ def bayes(romeo, juliet, date_res, match_prob, romeo_guess, juliet_guess):
     ph_success = HH * HH + HL * LH
     pl_success = LH * HL + LL * LL
     if date_res:
-        
-        # posterior
         # Romeo
-        p_rh = rH * ph_success / (rH * ph_success + rL * pl_success)
+        A = rH * (jH * HH * HH + jL * HL * LH)
+        p_rh = A / (A + (rL * (jH * HL * LH + jL * LL * LL))) 
         p_rl = 1 - p_rh
-        # juliet
-        p_jh = jH * ph_success / (jH * ph_success + jL * pl_success)
+        # Romeo
+        B = jH * (rH * HH * HH + rL * HL * LH )
+        p_jh = B / (B + (jL * (rH * HL * LH + rL * LL * LL)))
         p_jl = 1 - p_jh
     else:
-        ph_fail = 1 - ph_success
-        pl_fail = 1 - pl_success
         # Romeo
-        p_rh = rH * ph_fail / (rH * ph_fail + rL * pl_fail)
+        A = rH * (jH * (1 - HH * HH) + jL * (1 - HL * LH))
+        p_rh = A / (A + (rL * (jH * (1 - HL * LH) + jL * (1 - LL * LL))))
         p_rl = 1 - p_rh
         # Juliet
-        p_jh = jH * ph_fail / (jH * ph_fail + jL * pl_fail)
-        # if juliet == 11:
-        #     print(jH * ph_fail, (jH * ph_fail + jL * pl_fail))
+        B = jH * (rH * (1 - HH * HH) + rL * (1 - HL * LH))
+        p_jh = B / (B + (jL * (rH * (1 - HL * LH) + rL * (1 - LL * LL))))
         p_jl = 1 - p_jh
-    # if juliet == 11:
-    #     print('res is', [p_jh, p_jl], date_res, rH, rL, jH, jL, ph_fail, pl_fail)    
+    # if date_res:
+        
+    #     # posterior
+    #     # Romeo
+    #     p_rh = rH * ph_success / (rH * ph_success + rL * pl_success)
+    #     p_rl = 1 - p_rh
+    #     # juliet
+    #     p_jh = jH * ph_success / (jH * ph_success + jL * pl_success)
+    #     p_jl = 1 - p_jh
+    # else:
+    #     ph_fail = 1 - ph_success
+    #     pl_fail = 1 - pl_success
+    #     # Romeo
+    #     p_rh = rH * ph_fail / (rH * ph_fail + rL * pl_fail)
+    #     p_rl = 1 - p_rh
+    #     # Juliet
+    #     p_jh = jH * ph_fail / (jH * ph_fail + jL * pl_fail)
+    #     # if juliet == 11:
+    #     #     print(jH * ph_fail, (jH * ph_fail + jL * pl_fail))
+    #     p_jl = 1 - p_jh
+    # # if juliet == 11:
+    # #     print('res is', [p_jh, p_jl], date_res, rH, rL, jH, jL, ph_fail, pl_fail)    
     return [p_rh, p_rl], [p_jh, p_jl]
 
 
@@ -132,16 +150,18 @@ def simulator(N, T, match_probs, ratio1=0.5, ratio2=0.5, initial_guess=[0.5, 0.5
     np.random.seed(666)
     success = 0
     success_ub = 0
-    
+    success_rand = 0
+
     opt = find_best_strategy(N, T, func, match_probs)
-    print(opt)
     
     record_strategy = []
     record_optimal = []
+    record_random = []
     
     for t in range(T):
         temp_s = 0
         temp_o = 0
+        temp_rand = 0
         if t == 0:
             dates = func[0](N)
         else:
@@ -171,8 +191,7 @@ def simulator(N, T, match_probs, ratio1=0.5, ratio2=0.5, initial_guess=[0.5, 0.5
                 temp_s += 1
             # print(romeo, juliet, date_res)
             romeo_guess[romeo], juliet_guess[juliet] = bayes(romeo, juliet, date_res, match_probs, romeo_guess, juliet_guess)
-            if t == 1:
-                print(romeo_guess[romeo], juliet_guess[juliet])
+    
             if romeo_guess[romeo][0] >= romeo_guess[romeo][1]:
                 temp_rH.append(romeo)
             else:
@@ -202,14 +221,31 @@ def simulator(N, T, match_probs, ratio1=0.5, ratio2=0.5, initial_guess=[0.5, 0.5
             j2r = True if np.random.random() < match_probs[true_type_j][true_type_r] else False
             date_res = r2j and j2r
             if date_res:
-                success_ub += 1           
+                success_rand += 1           
                 temp_o += 1
+
+        dates_rand = func[0](N)
+        # dates_ub = func[-1](N, match_probs, romeo_identity, juliet_identity, ratio1, ratio2)
+        # print(dates_ub)
+        for romeo, juliet in dates_ub:
+            true_type_r = romeo_identity[romeo]
+            true_type_j = juliet_identity[juliet]
+            
+            r2j = True if np.random.random() < match_probs[true_type_r][true_type_j] else False
+            j2r = True if np.random.random() < match_probs[true_type_j][true_type_r] else False
+            date_res = r2j and j2r
+            if date_res:
+                success_rand += 1           
+                temp_rand += 1
+            
         record_strategy.append(temp_s)
         record_optimal.append(temp_o)
-    print(juliet_guess)
-    return record_strategy, record_optimal
+        record_random.append(temp_o)
+
+    
+    return record_strategy, record_optimal, record_random
 
 # simulator(100, 1000, funcs, [[0.8, 0.2], [0.8, 0.2]], ratio1=0.4, ratio2=0.2, mode=1)    
 
 
-r_s, r_o = simulator(100, 100, [[0.5, 0.25], [0.25, 0.5]], 0.5, 0.5)
+r_s, r_o = simulator(1000, 1000, [[0.6, 0.25], [0.25, 0.5]], 0.5, 0.5)
