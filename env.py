@@ -41,7 +41,7 @@ def initialization(N, ratio1, ratio2, initial_guess):
     return romeo_identity, romeo_guess, juliet_identity, juliet_guess
     
     
-def bayes(romeo, juliet, date_res, match_prob, romeo_guess, juliet_guess):
+def bayes(romeo, juliet, date_res, match_prob, romeo_guess, juliet_guess, full=True):
     """Update type guess based on the date result
 
     Args:
@@ -55,48 +55,51 @@ def bayes(romeo, juliet, date_res, match_prob, romeo_guess, juliet_guess):
     # prior
     rH, rL = romeo_guess[romeo]
     jH, jL = juliet_guess[juliet]
-    ph_success = HH * HH + HL * LH
-    pl_success = LH * HL + LL * LL
-    if date_res:
-        # Romeo
-        A = rH * (jH * HH * HH + jL * HL * LH)
-        p_rh = A / (A + (rL * (jH * HL * LH + jL * LL * LL))) 
-        p_rl = 1 - p_rh
-        # Romeo
-        B = jH * (rH * HH * HH + rL * HL * LH )
-        p_jh = B / (B + (jL * (rH * HL * LH + rL * LL * LL)))
-        p_jl = 1 - p_jh
+   
+    if full :
+        if date_res:
+            # Romeo
+            A = rH * (jH * HH * HH + jL * HL * LH)
+            p_rh = A / (A + (rL * (jH * HL * LH + jL * LL * LL))) 
+            p_rl = 1 - p_rh
+            # juliet
+            B = jH * (rH * HH * HH + rL * HL * LH )
+            p_jh = B / (B + (jL * (rH * HL * LH + rL * LL * LL)))
+            p_jl = 1 - p_jh
+        else:
+            # Romeo
+            A = rH * (jH * (1 - HH * HH) + jL * (1 - HL * LH))
+            p_rh = A / (A + (rL * (jH * (1 - HL * LH) + jL * (1 - LL * LL))))
+            p_rl = 1 - p_rh
+            # Juliet
+            B = jH * (rH * (1 - HH * HH) + rL * (1 - HL * LH))
+            p_jh = B / (B + (jL * (rH * (1 - HL * LH) + rL * (1 - LL * LL))))
+            p_jl = 1 - p_jh
     else:
-        # Romeo
-        A = rH * (jH * (1 - HH * HH) + jL * (1 - HL * LH))
-        p_rh = A / (A + (rL * (jH * (1 - HL * LH) + jL * (1 - LL * LL))))
-        p_rl = 1 - p_rh
-        # Juliet
-        B = jH * (rH * (1 - HH * HH) + rL * (1 - HL * LH))
-        p_jh = B / (B + (jL * (rH * (1 - HL * LH) + rL * (1 - LL * LL))))
-        p_jl = 1 - p_jh
-    # if date_res:
-        
-    #     # posterior
-    #     # Romeo
-    #     p_rh = rH * ph_success / (rH * ph_success + rL * pl_success)
-    #     p_rl = 1 - p_rh
-    #     # juliet
-    #     p_jh = jH * ph_success / (jH * ph_success + jL * pl_success)
-    #     p_jl = 1 - p_jh
-    # else:
-    #     ph_fail = 1 - ph_success
-    #     pl_fail = 1 - pl_success
-    #     # Romeo
-    #     p_rh = rH * ph_fail / (rH * ph_fail + rL * pl_fail)
-    #     p_rl = 1 - p_rh
-    #     # Juliet
-    #     p_jh = jH * ph_fail / (jH * ph_fail + jL * pl_fail)
-    #     # if juliet == 11:
-    #     #     print(jH * ph_fail, (jH * ph_fail + jL * pl_fail))
-    #     p_jl = 1 - p_jh
-    # # if juliet == 11:
-    # #     print('res is', [p_jh, p_jl], date_res, rH, rL, jH, jL, ph_fail, pl_fail)    
+        ph_success = HH * HH + HL * LH
+        pl_success = LH * HL + LL * LL 
+        if date_res:
+            
+            # posterior
+            # Romeo
+            p_rh = rH * ph_success / (rH * ph_success + rL * pl_success)
+            p_rl = 1 - p_rh
+            # juliet
+            p_jh = jH * ph_success / (jH * ph_success + jL * pl_success)
+            p_jl = 1 - p_jh
+        else:
+            ph_fail = 1 - ph_success
+            pl_fail = 1 - pl_success
+            # Romeo
+            p_rh = rH * ph_fail / (rH * ph_fail + rL * pl_fail)
+            p_rl = 1 - p_rh
+            # Juliet
+            p_jh = jH * ph_fail / (jH * ph_fail + jL * pl_fail)
+            # if juliet == 11:
+            #     print(jH * ph_fail, (jH * ph_fail + jL * pl_fail))
+            p_jl = 1 - p_jh
+        # if juliet == 11:
+        #     print('res is', [p_jh, p_jl], date_res, rH, rL, jH, jL, ph_fail, pl_fail)    
     return [p_rh, p_rl], [p_jh, p_jl]
 
 
@@ -134,7 +137,7 @@ def find_best_strategy(N, T, func, match_probs, mode=0, ratio1=0.5, ratio2=0.5, 
 
 
 
-def simulator(N, T, match_probs, ratio1=0.5, ratio2=0.5, initial_guess=[0.5, 0.5], func=funcs):
+def simulator(N, T, match_probs, ratio1=0.5, ratio2=0.5, initial_guess=[0.5, 0.5], func=funcs, full_info=True):
     """_summary_
 
     Args:
@@ -190,7 +193,7 @@ def simulator(N, T, match_probs, ratio1=0.5, ratio2=0.5, initial_guess=[0.5, 0.5
                 success += 1 
                 temp_s += 1
             # print(romeo, juliet, date_res)
-            romeo_guess[romeo], juliet_guess[juliet] = bayes(romeo, juliet, date_res, match_probs, romeo_guess, juliet_guess)
+            romeo_guess[romeo], juliet_guess[juliet] = bayes(romeo, juliet, date_res, match_probs, romeo_guess, juliet_guess, full_info)
     
             if romeo_guess[romeo][0] >= romeo_guess[romeo][1]:
                 temp_rH.append(romeo)
@@ -221,13 +224,13 @@ def simulator(N, T, match_probs, ratio1=0.5, ratio2=0.5, initial_guess=[0.5, 0.5
             j2r = True if np.random.random() < match_probs[true_type_j][true_type_r] else False
             date_res = r2j and j2r
             if date_res:
-                success_rand += 1           
+                success_ub += 1           
                 temp_o += 1
 
         dates_rand = func[0](N)
         # dates_ub = func[-1](N, match_probs, romeo_identity, juliet_identity, ratio1, ratio2)
         # print(dates_ub)
-        for romeo, juliet in dates_ub:
+        for romeo, juliet in dates_rand:
             true_type_r = romeo_identity[romeo]
             true_type_j = juliet_identity[juliet]
             
