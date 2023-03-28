@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 import random
 from strategies import *
+import copy
     
 def initialization(N, ratio1, ratio2, initial_guess):
     """_summary_
@@ -137,7 +138,7 @@ def find_best_strategy(N, T, func, match_probs, mode=0, ratio1=0.5, ratio2=0.5, 
 
 
 
-def simulator(N, T, match_probs, ratio1=0.5, ratio2=0.5, initial_guess=[0.5, 0.5], func=funcs, full_info=True):
+def simulator(N, T, match_probs, ratio1=0.5, ratio2=0.5, initial_guess=[0.5, 0.5], func=funcs, full_info=True, epsilon=1):
     """_summary_
 
     Args:
@@ -160,11 +161,13 @@ def simulator(N, T, match_probs, ratio1=0.5, ratio2=0.5, initial_guess=[0.5, 0.5
     record_strategy = []
     record_optimal = []
     record_random = []
-    
+    record_epsilon = []
+
     for t in range(T):
         temp_s = 0
         temp_o = 0
         temp_rand = 0
+        temp_epsilon = 0
         if t == 0:
             dates = func[0](N)
         else:
@@ -240,15 +243,75 @@ def simulator(N, T, match_probs, ratio1=0.5, ratio2=0.5, initial_guess=[0.5, 0.5
             if date_res:
                 success_rand += 1           
                 temp_rand += 1
+
+
+        # epsilon-greedy
+        
+
+        # romeo_guess_ = copy.deepcopy(romeo_guess)
+        # juliet_guess_ = copy.deepcopy(juliet_guess)
+        # if t == 0:
+        #     dates = func[0](N)
+        # else:
+        #     dice = np.random.random()
+        #     if dice < 1 - epsilon:
+        #         this_round = np.random.randint(0, 3)
+        #         while this_round == opt:
+        #             this_round = np.random.randint(0, 3)
+        #         if this_round == 0:
+        #             dates = func[0](N)
+        #         else:
+        #             dates = func[1](N, match_probs, this_round, [temp_rH_, temp_rL_, temp_jH_, temp_jL_])
+        #     else:
+        #         if opt == 0:
+        #             dates = func[0](N)
+        #         else:
+        #             dates = func[1](N, match_probs, opt, [temp_rH_, temp_rL_, temp_jH_, temp_jL_])
+        
+        # temp_rH_ = []
+        # temp_rL_ = []
+        # temp_jH_ = []
+        # temp_jL_ = []
+        
+        # # print(dates)
+        # # print(t, len(dates))
+        # # strategy
+        # for romeo, juliet in dates:
+        #     # check_res
+            
+        #     true_type_r = romeo_identity[romeo]
+        #     true_type_j = juliet_identity[juliet]
+            
+        #     r2j = True if np.random.random() < match_probs[true_type_r][true_type_j] else False
+        #     j2r = True if np.random.random() < match_probs[true_type_j][true_type_r] else False
+            
+        #     date_res = r2j and j2r
+        #     if date_res:
+        #         success += 1 
+        #         temp_epsilon += 1
+        #     # print(romeo, juliet, date_res)
+        #     romeo_guess_[romeo], juliet_guess_[juliet] = bayes(romeo, juliet, date_res, match_probs, romeo_guess_, juliet_guess_, full_info)
+    
+        #     if romeo_guess_[romeo][0] >= romeo_guess_[romeo][1]:
+        #         temp_rH_.append(romeo)
+        #     else:
+        #         temp_rL_.append(romeo)
+            
+        #     if juliet_guess_[juliet][0] >= juliet_guess_[juliet][1]:
+        #         temp_jH_.append(juliet)
+        #     else:
+        #         temp_jL_.append(juliet)        
+
             
         record_strategy.append(temp_s)
         record_optimal.append(temp_o)
         record_random.append(temp_rand)
+        # record_epsilon.append(temp_epsilon)
 
     
     return record_strategy, record_optimal, record_random
 
-# simulator(100, 1000, funcs, [[0.8, 0.2], [0.8, 0.2]], ratio1=0.4, ratio2=0.2, mode=1)    
+# simulator(100, 1000, [[0.8, 0.2], [0.8, 0.2]], ratio1=0.5, ratio2=0.5)    
 
 
 # r_s, r_o = simulator(1000, 1000, [[0.6, 0.25], [0.25, 0.5]], 0.5, 0.5)
