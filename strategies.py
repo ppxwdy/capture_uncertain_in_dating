@@ -41,15 +41,15 @@ def greedy(N, match_prob, mode, temp_type=[], ratio1=0.5, ratio2=0.5):
         temp_jH = [i+N for i in range(int(N*ratio2))]
         temp_jL = [i+N for i in range(int(N*ratio2), N)]
         
-    [HH, HL], [LH, LL] = match_prob
-    success_expectation = [(HH*HH, (0, 0)), (HL*LH, (0, 1)), (LL*LL, (1,1))]
-    success_expectation.sort(reverse=True, key=lambda x:x[0])
-    greedy_order = [pair[1] for pair in success_expectation]
+    # [HH, HL], [LH, LL] = match_prob
+    # success_expectation = [(HH*HH, (0, 0)), (HL*LH, (0, 1)), (LL*LL, (1,1))]
+    # success_expectation.sort(reverse=True, key=lambda x:x[0])
+    # greedy_order = [pair[1] for pair in success_expectation]
     
     if mode == 1:
         greedy_order = [(0, 0), (1, 1), (0, 1)]
     else:
-        greedy_order = [(0, 1), (0, 1), (1, 1)]
+        greedy_order = [(0, 1), (0, 0), (1, 1)]
     
     for pair in greedy_order:
         t1, t2 = pair
@@ -63,7 +63,7 @@ def greedy(N, match_prob, mode, temp_type=[], ratio1=0.5, ratio2=0.5):
             lis2, id2 = (temp_jH, 0) if temp_jH else (temp_jL, 1)
         else:
             lis2, id2 = (temp_jL, 1) if temp_jL else (temp_jH, 0)
-
+        # print(greedy_order,lis1, lis2)
         if not lis1 or not lis2:
             continue
         
@@ -98,12 +98,6 @@ def greedy(N, match_prob, mode, temp_type=[], ratio1=0.5, ratio2=0.5):
 
         dates += list(zip(lis1_, lis2_))
     return dates
-
-
-def strategy1():
-    pass
-
-
 
 
 
@@ -181,3 +175,6 @@ def market_choice(N, match_prob, temp_type=[], mode=0):
         return dates
     
 funcs = [random_date, greedy]
+
+rtn = greedy(100, [[0.8, 0.1], [0.8, 0.1]], 1, temp_type=[], ratio1=0.5, ratio2=0.5)
+# print(rtn)
