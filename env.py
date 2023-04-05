@@ -319,4 +319,4 @@ def simulator(N, T, match_probs, ratio1=0.5, ratio2=0.5, initial_guess=[0.5, 0.5
 
 
 # r_s, r_o = simulator(1000, 1000, [[0.6, 0.25], [0.25, 0.5]], 0.5, 0.5)
-simulator(100, 2, [[0.8, 0.1], [0.8, 0.1]], 0.2, 0.8)
+# simulator(100, 2, [[0.8, 0.1], [0.8, 0.1]], 0.2, 0.8)

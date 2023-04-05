@@ -49,10 +49,9 @@ def best_strategy(match_probs, ratio1, ratio2):
     e_random = ratio1*ratio2*HH + ((1-ratio1)*ratio2 + ratio1*(1 - ratio2))*HL +\
                 (1 - ratio1)*(1 - ratio2)*LL
     
-    ratio1 = max(ratio1, ratio2)
-    ratio2 = min(ratio1, ratio2)
+    ratio1, ratio2 = max(ratio1, ratio2),  min(ratio1, ratio2)
 
-    e_same = ratio2*HH + (1-ratio1)*LL + (ratio1-ratio2) * HL
+    e_same = ratio2*HH + (1-ratio1)*LL + abs(ratio1 - 1 + ratio1) * HL
 
     e_mix = (min(ratio1, 1-ratio2) + min(ratio2, 1 - ratio1)) * HL
     if ratio1 > 1 - ratio2:
@@ -62,7 +61,7 @@ def best_strategy(match_probs, ratio1, ratio2):
 
     mode = [(0, e_random), (1, e_same), (2, e_mix)]
     mode.sort(key=lambda x:x[1])
-    print(mode)
+    # print(mode)
     return mode[-1][0]
 
 
@@ -127,7 +126,7 @@ def bayes(romeo, juliet, date_res, match_prob, romeo_guess, juliet_guess, full=T
         #     print('res is', [p_jh, p_jl], date_res, rH, rL, jH, jL, ph_fail, pl_fail)    
     return [p_rh, p_rl], [p_jh, p_jl]
 
-def simulation(N, T, match_probs, ratio1=0.5, ratio2=0.5, initial_guess=[0.5, 0.5], func=funcs, full_info=True, epsilon=0.9):
+def simulation(N, T, match_probs, ratio1=0.5, ratio2=0.5, initial_guess=[0.5, 0.5], func=funcs, full_info=True, epsilon=0.1):
     
     np.random.seed(666)
     romeo_identity, romeo_guess, juliet_identity, juliet_guess = initialization(N, ratio1, ratio2, initial_guess)
@@ -200,7 +199,7 @@ def simulation(N, T, match_probs, ratio1=0.5, ratio2=0.5, initial_guess=[0.5, 0.
         # opt
         match_opt = 0
         dates = func[1](N, match_probs, mode, ratio1=ratio1, ratio2=ratio2)
-        print(dates)
+        # print(dates)
         for romeo, juliet in dates:
             true_type_r = romeo_identity[romeo]
             true_type_j = juliet_identity[juliet]
@@ -280,6 +279,7 @@ def simulation(N, T, match_probs, ratio1=0.5, ratio2=0.5, initial_guess=[0.5, 0.
             dates = func[0](N) 
         else:
             p = np.random.random()
+
             # explore
             if p < epsilon:
                 dates = func[0](N)
@@ -326,5 +326,5 @@ def simulation(N, T, match_probs, ratio1=0.5, ratio2=0.5, initial_guess=[0.5, 0.
     return record_greedy, record_opt, record_random, record_e_greedy
 
 
-record_greedy, record_opt, record_random, record_e_greedy = simulation(100, 2, [[0.8, 0.1], [0.8, 0.1]], 0.2, 0.8)
-print(len(record_opt)/10000)
+# record_greedy, record_opt, record_random, record_e_greedy = simulation(100, 200, [[0.8, 0.1], [0.8, 0.1]], 0.2, 0.8)
+# print(len(record_opt)/10000)
