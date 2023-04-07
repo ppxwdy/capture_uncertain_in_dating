@@ -61,7 +61,7 @@ def best_strategy(match_probs, ratio1, ratio2):
 
     mode = [(0, e_random), (1, e_same), (2, e_mix)]
     mode.sort(key=lambda x:x[1])
-    # print(mode)
+    print(mode)
     return mode[-1][0]
 
 
@@ -126,6 +126,7 @@ def bayes(romeo, juliet, date_res, match_prob, romeo_guess, juliet_guess, full=T
         #     print('res is', [p_jh, p_jl], date_res, rH, rL, jH, jL, ph_fail, pl_fail)    
     return [p_rh, p_rl], [p_jh, p_jl]
 
+
 def simulation(N, T, match_probs, ratio1=0.5, ratio2=0.5, initial_guess=[0.5, 0.5], func=funcs, full_info=True, epsilon=0.1):
     
     np.random.seed(666)
@@ -146,7 +147,7 @@ def simulation(N, T, match_probs, ratio1=0.5, ratio2=0.5, initial_guess=[0.5, 0.
     record_e_greedy = []
 
     mode = best_strategy(match_probs, ratio1, ratio2)
-
+    print(mode)
     for t in range(T):
         
         # greedy
@@ -207,6 +208,7 @@ def simulation(N, T, match_probs, ratio1=0.5, ratio2=0.5, initial_guess=[0.5, 0.
             r2j = True if np.random.random() < match_probs[true_type_r][true_type_j] else False
             j2r = True if np.random.random() < match_probs[true_type_j][true_type_r] else False
             date_res = r2j and j2r
+            # print(romeo, true_type_r, juliet, true_type_j, r2j, j2r, match_probs[true_type_r][true_type_j], match_probs[true_type_j][true_type_r])
             if date_res:
                 match_opt += 1
         
@@ -294,7 +296,6 @@ def simulation(N, T, match_probs, ratio1=0.5, ratio2=0.5, initial_guess=[0.5, 0.
         for romeo, juliet in dates:
             true_type_r = romeo_identity[romeo]
             true_type_j = juliet_identity[juliet]
-            
             r2j = True if np.random.random() < match_probs[true_type_r][true_type_j] else False
             j2r = True if np.random.random() < match_probs[true_type_j][true_type_r] else False
             date_res = r2j and j2r
@@ -326,5 +327,5 @@ def simulation(N, T, match_probs, ratio1=0.5, ratio2=0.5, initial_guess=[0.5, 0.
     return record_greedy, record_opt, record_random, record_e_greedy
 
 
-# record_greedy, record_opt, record_random, record_e_greedy = simulation(100, 200, [[0.8, 0.1], [0.8, 0.1]], 0.2, 0.8)
-# print(len(record_opt)/10000)
+# record_greedy, record_opt, record_random, record_e_greedy = simulation(100, 10, [[0.8, 0.1], [0.8, 0.1]], 0.8, 0.2, [0.8, 0.2])
+# print(record_opt[-1]/100)
