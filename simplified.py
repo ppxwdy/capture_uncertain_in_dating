@@ -48,16 +48,32 @@ def best_strategy(match_probs, ratio1, ratio2):
 
     e_random = ratio1*ratio2*HH + ((1-ratio1)*ratio2 + ratio1*(1 - ratio2))*HL +\
                 (1 - ratio1)*(1 - ratio2)*LL
-    
+                
     ratio1, ratio2 = max(ratio1, ratio2),  min(ratio1, ratio2)
+                
+    rh1, rl1 = ratio1, 1 - ratio1
+    rh2, rl2 = ratio2, 1 - ratio2             
+    
+    r = abs(rh1 - rh2)
+    e_same = rh2 * HH + rl1 * LL + r * HL
+    
+    r1 = 0 if rh1 - min(rh1, rl2) <=0 else rh1 - min(rh1, rl2)
+    r2 = 0 if rl1 - min(rh2, rl1) <=0 else rl1 - min(rh1, rl2)
+    e_mix = (min(rh1, rl2) + min(rh2, rl1)) * HL + r1 * HH + r2 * LL
+    print(r1, r2)
+    
+    
+    
+    
+    
 
-    e_same = ratio2*HH + (1-ratio1)*LL + abs(ratio1 - 1 + ratio1) * HL
+    # e_same = ratio2*HH + (1-ratio1)*LL + abs(ratio1 - 1 + ratio1) * HL  # wrong
 
-    e_mix = (min(ratio1, 1-ratio2) + min(ratio2, 1 - ratio1)) * HL
-    if ratio1 > 1 - ratio2:
-        e_mix += abs(ratio1+ratio2 -1) * LL
-    else:
-        e_mix += abs(ratio1+ratio2 -1) * HH
+    # e_mix = (min(ratio1, 1-ratio2) + min(ratio2, 1 - ratio1)) * HL  # wrong
+    # if ratio1 > 1 - ratio2:
+    #     e_mix += abs(ratio1+ratio2 -1) * LL
+    # else:
+    #     e_mix += abs(ratio1+ratio2 -1) * HH
 
     mode = [(0, e_random), (1, e_same), (2, e_mix)]
     mode.sort(key=lambda x:x[1])
@@ -327,5 +343,5 @@ def simulation(N, T, match_probs, ratio1=0.5, ratio2=0.5, initial_guess=[0.5, 0.
     return record_greedy, record_opt, record_random, record_e_greedy
 
 
-# record_greedy, record_opt, record_random, record_e_greedy = simulation(100, 10, [[0.8, 0.1], [0.8, 0.1]], 0.8, 0.2, [0.8, 0.2])
+record_greedy, record_opt, record_random, record_e_greedy = simulation(100, 10, [[0.9, 0.4], [0.5, 0.2]], 0.3, 0.3, [0.3, 0.3])
 # print(record_opt[-1]/100)
