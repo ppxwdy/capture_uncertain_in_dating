@@ -4,7 +4,7 @@ import random
 
 global funcs 
 
-def random_date(N):
+def random_date(N, random_seed=666):
     """generate dating pair randomly
 
     Args:
@@ -14,6 +14,7 @@ def random_date(N):
     Returns:
         _type_: _description_
     """
+    random.seed(random_seed)
     romeos = [i for i in range(N)]
     juliets = [i for i in range(N, 2*N)]
 
@@ -23,13 +24,14 @@ def random_date(N):
     return list(zip(l1, l2))
 
 
-def greedy(N, match_prob, mode, temp_type=[], ratio1=0.5, ratio2=0.5):
+def greedy(N, match_prob, mode, temp_type=[], ratio1=0.5, ratio2=0.5, random_seed=666):
     """based on current guess on the type and the matching prob to 
     pair romeo and juliet greedily.
 
     Returns:
         _type_: _description_
     """
+    random.seed(random_seed)
     romeos = [i for i in range(N)]
     juliets = [i for i in range(N, 2*N)]
     dates = []
@@ -176,5 +178,5 @@ def market_choice(N, match_prob, temp_type=[], mode=0):
     
 funcs = [random_date, greedy]
 
-rtn = greedy(100, [[0.8, 0.1], [0.8, 0.1]], 1, temp_type=[], ratio1=0.5, ratio2=0.5)
+# rtn = greedy(100, [[0.8, 0.1], [0.8, 0.1]], 1, temp_type=[], ratio1=0.5, ratio2=0.5)
 # print(rtn)

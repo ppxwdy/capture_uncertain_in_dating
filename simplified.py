@@ -58,13 +58,9 @@ def best_strategy(match_probs, ratio1, ratio2):
     e_same = rh2 * HH + rl1 * LL + r * HL
     
     r1 = 0 if rh1 - min(rh1, rl2) <=0 else rh1 - min(rh1, rl2)
-    r2 = 0 if rl1 - min(rh2, rl1) <=0 else rl1 - min(rh1, rl2)
+    r2 = 0 if rl1 - min(rh2, rl1) <=0 else rl1 - min(rh2, rl1)
     e_mix = (min(rh1, rl2) + min(rh2, rl1)) * HL + r1 * HH + r2 * LL
-    print(r1, r2)
-    
-    
-    
-    
+    # print(r1, r2)
     
 
     # e_same = ratio2*HH + (1-ratio1)*LL + abs(ratio1 - 1 + ratio1) * HL  # wrong
@@ -77,11 +73,11 @@ def best_strategy(match_probs, ratio1, ratio2):
 
     mode = [(0, e_random), (1, e_same), (2, e_mix)]
     mode.sort(key=lambda x:x[1])
-    print(mode)
+    # print(mode)
     return mode[-1][0]
 
 
-def bayes(romeo, juliet, date_res, match_prob, romeo_guess, juliet_guess, full=True):
+def bayes(romeo, juliet, date_res, match_prob, romeo_guess, juliet_guess, ratio1, ratio2, full=True):
     """Update type guess based on the date result
 
     Args:
@@ -116,25 +112,29 @@ def bayes(romeo, juliet, date_res, match_prob, romeo_guess, juliet_guess, full=T
             p_jh = B / (B + (jL * (rH * (1 - HL * LH) + rL * (1 - LL * LL))))
             p_jl = 1 - p_jh
     else:
-        ph_success = HH * HH + HL * LH
-        pl_success = LH * HL + LL * LL 
+        r_ph_success = ratio2 * HH * HH + (1-ratio2) * HL * LH
+        r_pl_success = ratio2 * LH * HL + (1-ratio2) * LL * LL 
+        j_ph_success = ratio1 * HH * HH + (1-ratio1) * HL * LH
+        j_pl_success = ratio1 * LH * HL + (1-ratio1) * LL * LL 
         if date_res:
             
             # posterior
             # Romeo
-            p_rh = rH * ph_success / (rH * ph_success + rL * pl_success)
+            p_rh = rH * r_ph_success / (rH * r_ph_success + rL * r_pl_success)
             p_rl = 1 - p_rh
             # juliet
-            p_jh = jH * ph_success / (jH * ph_success + jL * pl_success)
+            p_jh = jH * j_ph_success / (jH * j_ph_success + jL * j_pl_success)
             p_jl = 1 - p_jh
         else:
-            ph_fail = 1 - ph_success
-            pl_fail = 1 - pl_success
+            r_ph_fail = 1 - r_ph_success
+            r_pl_fail = 1 - r_pl_success
+            j_ph_fail = 1 - j_ph_success
+            j_pl_fail = 1 - j_pl_success
             # Romeo
-            p_rh = rH * ph_fail / (rH * ph_fail + rL * pl_fail)
+            p_rh = rH * r_ph_fail / (rH * r_ph_fail + rL * r_pl_fail)
             p_rl = 1 - p_rh
             # Juliet
-            p_jh = jH * ph_fail / (jH * ph_fail + jL * pl_fail)
+            p_jh = jH * j_ph_fail / (jH * j_ph_fail + jL * j_pl_fail)
             # if juliet == 11:
             #     print(jH * ph_fail, (jH * ph_fail + jL * pl_fail))
             p_jl = 1 - p_jh
@@ -143,9 +143,7 @@ def bayes(romeo, juliet, date_res, match_prob, romeo_guess, juliet_guess, full=T
     return [p_rh, p_rl], [p_jh, p_jl]
 
 
-def simulation(N, T, match_probs, ratio1=0.5, ratio2=0.5, initial_guess=[0.5, 0.5], func=funcs, full_info=True, epsilon=0.1):
-    
-    np.random.seed(666)
+def simulation(N, T, match_probs, ratio1=0.5, ratio2=0.5, initial_guess=[0.5, 0.5], func=funcs, full_info=True, epsilon=0.1, random_seed=666):
     romeo_identity, romeo_guess, juliet_identity, juliet_guess = initialization(N, ratio1, ratio2, initial_guess)
 
     romeo_guess_greedy = copy.deepcopy(romeo_guess)
@@ -163,18 +161,18 @@ def simulation(N, T, match_probs, ratio1=0.5, ratio2=0.5, initial_guess=[0.5, 0.
     record_e_greedy = []
 
     mode = best_strategy(match_probs, ratio1, ratio2)
-    print(mode)
+    # print(mode)
     for t in range(T):
         
         # greedy
         match_greedy = 0
         if t == 0:
-            dates = func[0](N)
+            dates = func[0](N, random_seed=t+random_seed)
         else:
             if mode == 0:
-                dates = func[0](N)
+                dates = func[0](N, random_seed=t+random_seed)
             else:
-                dates = func[1](N, match_probs, mode, [temp_rH_greedy, temp_rL_greedy, temp_jH_greedy, temp_jL_greedy], ratio1, ratio2)
+                dates = func[1](N, match_probs, mode, [temp_rH_greedy, temp_rL_greedy, temp_jH_greedy, temp_jL_greedy], ratio1, ratio2, random_seed=t+random_seed)
 
         temp_rH_greedy = []
         temp_rL_greedy = []
@@ -195,7 +193,7 @@ def simulation(N, T, match_probs, ratio1=0.5, ratio2=0.5, initial_guess=[0.5, 0.
                 match_greedy += 1
             
             # bayes
-            romeo_guess_greedy[romeo], juliet_guess_greedy[juliet] = bayes(romeo, juliet, date_res, match_probs, romeo_guess_greedy, juliet_guess_greedy, full_info)
+            romeo_guess_greedy[romeo], juliet_guess_greedy[juliet] = bayes(romeo, juliet, date_res, match_probs, romeo_guess_greedy, juliet_guess_greedy, ratio1, ratio2,full_info)
             temp_r_greedy.append((romeo, romeo_guess_greedy[romeo][0]))
             temp_j_greedy.append((juliet, juliet_guess_greedy[juliet][0]))
 
@@ -215,7 +213,7 @@ def simulation(N, T, match_probs, ratio1=0.5, ratio2=0.5, initial_guess=[0.5, 0.
         
         # opt
         match_opt = 0
-        dates = func[1](N, match_probs, mode, ratio1=ratio1, ratio2=ratio2)
+        dates = func[1](N, match_probs, mode, ratio1=ratio1, ratio2=ratio2, random_seed=t+random_seed)
         # print(dates)
         for romeo, juliet in dates:
             true_type_r = romeo_identity[romeo]
@@ -233,7 +231,7 @@ def simulation(N, T, match_probs, ratio1=0.5, ratio2=0.5, initial_guess=[0.5, 0.
         match_rand = 0
         
         if t == T-1:
-            dates = func[1](N, match_probs, mode, [temp_rH_rand, temp_rL_rand, temp_jH_rand, temp_jL_rand], ratio1, ratio2)
+            dates = func[1](N, match_probs, mode, [temp_rH_rand, temp_rL_rand, temp_jH_rand, temp_jL_rand], ratio1, ratio2, random_seed=t+random_seed)
             temp_rH_rand = []
             temp_rL_rand = []
             temp_jH_rand = []
@@ -250,12 +248,12 @@ def simulation(N, T, match_probs, ratio1=0.5, ratio2=0.5, initial_guess=[0.5, 0.
                 if date_res:
                     match_rand += 1        
 
-                romeo_guess_random[romeo], juliet_guess_random[juliet] = bayes(romeo, juliet, date_res, match_probs, romeo_guess_random, juliet_guess_random, full_info)
+                romeo_guess_random[romeo], juliet_guess_random[juliet] = bayes(romeo, juliet, date_res, match_probs, romeo_guess_random, juliet_guess_random, ratio1, ratio2, full_info)
                 temp_r_rand.append((romeo, romeo_guess_random[romeo][0]))
                 temp_j_rand.append((juliet, juliet_guess_random[juliet][0]))
 
         else:
-            dates = func[0](N)
+            dates = func[0](N, random_seed=t+random_seed)
             temp_rH_rand = []
             temp_rL_rand = []
             temp_jH_rand = []
@@ -272,7 +270,7 @@ def simulation(N, T, match_probs, ratio1=0.5, ratio2=0.5, initial_guess=[0.5, 0.
                 if date_res:
                     match_rand += 1        
 
-                romeo_guess_random[romeo], juliet_guess_random[juliet] = bayes(romeo, juliet, date_res, match_probs, romeo_guess_random, juliet_guess_random, full_info)
+                romeo_guess_random[romeo], juliet_guess_random[juliet] = bayes(romeo, juliet, date_res, match_probs, romeo_guess_random, juliet_guess_random, ratio1, ratio2, full_info)
                 temp_r_rand.append((romeo, romeo_guess_random[romeo][0]))
                 temp_j_rand.append((juliet, juliet_guess_random[juliet][0]))
 
@@ -294,15 +292,16 @@ def simulation(N, T, match_probs, ratio1=0.5, ratio2=0.5, initial_guess=[0.5, 0.
         # e-greedy
         match_e = 0
         if t == 0:
-            dates = func[0](N) 
+            dates = func[0](N, random_seed=t+random_seed) 
         else:
+            np.random.seed(t+random_seed)
             p = np.random.random()
 
             # explore
             if p < epsilon:
-                dates = func[0](N)
+                dates = func[0](N, random_seed=t+random_seed)
             else:
-                dates = func[1](N, match_probs, mode, [temp_rH_e, temp_rL_e, temp_jH_e, temp_jL_e], ratio1, ratio2)
+                dates = func[1](N, match_probs, mode, [temp_rH_e, temp_rL_e, temp_jH_e, temp_jL_e], ratio1, ratio2, random_seed=t+random_seed)
         temp_rH_e = []
         temp_rL_e = []
         temp_jH_e = []
@@ -318,7 +317,7 @@ def simulation(N, T, match_probs, ratio1=0.5, ratio2=0.5, initial_guess=[0.5, 0.
             if date_res:
                 match_e += 1        
 
-            romeo_guess_e_greedy[romeo], juliet_guess_e_greedy[juliet] = bayes(romeo, juliet, date_res, match_probs, romeo_guess_e_greedy, juliet_guess_e_greedy, full_info)
+            romeo_guess_e_greedy[romeo], juliet_guess_e_greedy[juliet] = bayes(romeo, juliet, date_res, match_probs, romeo_guess_e_greedy, juliet_guess_e_greedy, ratio1, ratio2, full_info)
             temp_r_e.append((romeo, romeo_guess_e_greedy[romeo][0]))
             temp_j_e.append((juliet, juliet_guess_e_greedy[juliet][0]))
 
@@ -340,8 +339,41 @@ def simulation(N, T, match_probs, ratio1=0.5, ratio2=0.5, initial_guess=[0.5, 0.
         record_random.append(match_rand)
         record_e_greedy.append(match_e)
 
-    return record_greedy, record_opt, record_random, record_e_greedy
+    correct_rate_greedy = 0
+    correct_rate_random = 0
+    correct_rate_e_greedy = 0
+    target = int(N*ratio1)
+    for i in range(target):
+        greedy_ = temp_rH_greedy[i]
+        random_ = temp_rH_rand[i]
+        e_greedy_ = temp_rH_e[i]
 
+        if greedy_ < target:
+            correct_rate_greedy += 1
+        if random_ < target:
+            correct_rate_random += 1
+        if e_greedy_ < target:
+            correct_rate_e_greedy += 1
+    
+    # print('greedy', str(correct_rate_greedy/target)[:7])
+    # print('random', str(correct_rate_random/target)[:7])
+    # print('e_greedy', str(correct_rate_e_greedy/target)[:7])
 
-record_greedy, record_opt, record_random, record_e_greedy = simulation(100, 10, [[0.9, 0.4], [0.5, 0.2]], 0.3, 0.3, [0.3, 0.3])
-# print(record_opt[-1]/100)
+    return record_greedy, record_opt, record_random, record_e_greedy,  correct_rate_greedy, correct_rate_random, correct_rate_e_greedy
+
+# N = 100
+# T = 4
+# match_probs = [[0.1, 0.1], [0.8, 0.1]]
+# ratio1 = 0.6
+# ratio2 = 0.2
+# initial_guess = [ratio1, ratio2]
+# func=funcs
+# full_info=True
+# epsilon=0.1
+# record_greedy, record_opt, record_random, record_e_greedy, correct_rate_greedy, correct_rate_random, correct_rate_e_greedy = simulation(N, T, match_probs, ratio1, ratio1, initial_guess)
+# print(record_opt[-1]/N)
+
+# match_probs = [[0.8, 0.3], [0.3, 0.7]]
+# ratio1 = 0.3
+# ratio2 = 0.3
+# best_strategy(match_probs, ratio1, ratio2)
