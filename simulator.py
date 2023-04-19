@@ -1,10 +1,10 @@
-from env import initialization
 import numpy as np
 import copy
 from strategies import *
 
 def initialization(N, ratio1, ratio2, initial_guess):
-    """_summary_
+    """
+    This function will give the initial state of the classification of the people and the initial guess(The prior probability) of them.
 
     Args:
         N (_type_): the agent number on each side
@@ -46,9 +46,11 @@ def best_strategy(match_probs, ratio1, ratio2):
     HL = H2L * L2H
     LL = L2L**2
 
+    # expectation of random match
     e_random = ratio1*ratio2*HH + ((1-ratio1)*ratio2 + ratio1*(1 - ratio2))*HL +\
                 (1 - ratio1)*(1 - ratio2)*LL
-                
+    
+    # expectation of match with same type         
     ratio1, ratio2 = max(ratio1, ratio2),  min(ratio1, ratio2)
                 
     rh1, rl1 = ratio1, 1 - ratio1
@@ -57,35 +59,27 @@ def best_strategy(match_probs, ratio1, ratio2):
     r = abs(rh1 - rh2)
     e_same = rh2 * HH + rl1 * LL + r * HL
     
+    # expectation about match with different type
     r1 = 0 if rh1 - min(rh1, rl2) <=0 else rh1 - min(rh1, rl2)
     r2 = 0 if rl1 - min(rh2, rl1) <=0 else rl1 - min(rh2, rl1)
     e_mix = (min(rh1, rl2) + min(rh2, rl1)) * HL + r1 * HH + r2 * LL
-    # print(r1, r2)
-    
 
-    # e_same = ratio2*HH + (1-ratio1)*LL + abs(ratio1 - 1 + ratio1) * HL  # wrong
-
-    # e_mix = (min(ratio1, 1-ratio2) + min(ratio2, 1 - ratio1)) * HL  # wrong
-    # if ratio1 > 1 - ratio2:
-    #     e_mix += abs(ratio1+ratio2 -1) * LL
-    # else:
-    #     e_mix += abs(ratio1+ratio2 -1) * HH
-
+    # sort the expectations and choose the best algorithm as the greedy choice
     mode = [(0, e_random), (1, e_same), (2, e_mix)]
     mode.sort(key=lambda x:x[1])
-    # print(mode)
     return mode[-1][0]
 
 
 def bayes(romeo, juliet, date_res, match_prob, romeo_guess, juliet_guess, ratio1, ratio2, full=True):
-    """Update type guess based on the date result
+    """Update type guess based on the date result of the pair.
 
     Args:
-        romeo (_type_): _description_
-        juliet (_type_): _description_
-        date_res (_type_): _description_
-        romeo_guess (_type_): _description_
-        julie_guess (_type_): _description_
+        romeo (int): the romeo of this pair
+        juliet (int): the juliet of this pair
+        date_res (int): the result of their match attempt
+        romeo_guess (dict): the dictionary of prior of all Romeos
+        julie_guess (dict): the dictionary of prior of all Juliet.
+        full (bool): the bayes update will based on full info if True, otherwise we only used the res instead of the type probs of them.
     """
     [HH, HL], [LH, LL] = match_prob
     # prior
@@ -135,15 +129,34 @@ def bayes(romeo, juliet, date_res, match_prob, romeo_guess, juliet_guess, ratio1
             p_rl = 1 - p_rh
             # Juliet
             p_jh = jH * j_ph_fail / (jH * j_ph_fail + jL * j_pl_fail)
-            # if juliet == 11:
-            #     print(jH * ph_fail, (jH * ph_fail + jL * pl_fail))
             p_jl = 1 - p_jh
-        # if juliet == 11:
-        #     print('res is', [p_jh, p_jl], date_res, rH, rL, jH, jL, ph_fail, pl_fail)    
+       
     return [p_rh, p_rl], [p_jh, p_jl]
 
 
 def simulation(N, T, match_probs, ratio1=0.5, ratio2=0.5, initial_guess=[0.5, 0.5], func=funcs, full_info=True, epsilon=0.1, random_seed=666):
+    """
+        This function will simulate the whole match process (generate pairs, match and update posterior) for greedy algorithm, random algorithm, 
+        and epsilon greedy algorithm. The opt part is for getting the upper bound which will use the true identity of the agents and do greedy match
+        for each round.
+    Args:
+        N (int): the number of agent on each side
+        T (int): the maximum number of iteration 
+        match_probs ([[float, float], [float, float]]): [[prob of H likes H, H likes L], [L likes H, L likes L]]
+        ratio1 (float, optional): Proportion of Type H in the first group. Defaults to 0.5.
+        ratio2 (float, optional): Proportion of Type L in the first group. Defaults to 0.5.
+        initial_guess (list, optional): The prior probability of each agent. Defaults to [0.5, 0.5].
+        func (_type_, optional): the functions that generate dating pairs for each round. Defaults to funcs.
+        full_info (bool, optional): Control whether to update the Bayesian with all information, True is using all information. Defaults to True.
+        epsilon (float, optional): with probability epsilon to do exploration. Defaults to 0.1.
+        random_seed (int, optional): Defaults to 666.
+
+    Returns:
+        The first three returns are lists that record the number of matched pairs of different algorithms and the upper bound.
+        The last three returns are the final classification accuracies of Type H of the first group of different algorithms.
+    """    
+    
+    # initialization
     romeo_identity, romeo_guess, juliet_identity, juliet_guess = initialization(N, ratio1, ratio2, initial_guess)
 
     romeo_guess_greedy = copy.deepcopy(romeo_guess)
@@ -160,12 +173,15 @@ def simulation(N, T, match_probs, ratio1=0.5, ratio2=0.5, initial_guess=[0.5, 0.
     record_random = []
     record_e_greedy = []
 
+    # find the greedy choice
     mode = best_strategy(match_probs, ratio1, ratio2)
-    # print(mode)
+
     for t in range(T):
         
         # greedy
         match_greedy = 0
+        # get the dates of this iteration
+        # first round get the dates by random pairing
         if t == 0:
             dates = func[0](N, random_seed=t+random_seed)
         else:
@@ -181,6 +197,7 @@ def simulation(N, T, match_probs, ratio1=0.5, ratio2=0.5, initial_guess=[0.5, 0.
         temp_r_greedy = []
         temp_j_greedy = []
 
+        # get the result for each pair 
         for romeo, juliet in dates:
             type_r = romeo_identity[romeo]
             type_j = juliet_identity[juliet]
@@ -197,6 +214,7 @@ def simulation(N, T, match_probs, ratio1=0.5, ratio2=0.5, initial_guess=[0.5, 0.
             temp_r_greedy.append((romeo, romeo_guess_greedy[romeo][0]))
             temp_j_greedy.append((juliet, juliet_guess_greedy[juliet][0]))
 
+        # get the classification result for this iteration
         temp_r_greedy.sort(reverse=True, key=lambda x:x[1])
         temp_j_greedy.sort(reverse=True, key=lambda x:x[1])
         for i in range(N):
@@ -211,10 +229,10 @@ def simulation(N, T, match_probs, ratio1=0.5, ratio2=0.5, initial_guess=[0.5, 0.
                 temp_jL_greedy.append(temp_j_greedy[i][0])
 
         
-        # opt
+        # optimal
         match_opt = 0
         dates = func[1](N, match_probs, mode, ratio1=ratio1, ratio2=ratio2, random_seed=t+random_seed)
-        # print(dates)
+
         for romeo, juliet in dates:
             true_type_r = romeo_identity[romeo]
             true_type_j = juliet_identity[juliet]
@@ -222,7 +240,7 @@ def simulation(N, T, match_probs, ratio1=0.5, ratio2=0.5, initial_guess=[0.5, 0.
             r2j = True if np.random.random() < match_probs[true_type_r][true_type_j] else False
             j2r = True if np.random.random() < match_probs[true_type_j][true_type_r] else False
             date_res = r2j and j2r
-            # print(romeo, true_type_r, juliet, true_type_j, r2j, j2r, match_probs[true_type_r][true_type_j], match_probs[true_type_j][true_type_r])
+            
             if date_res:
                 match_opt += 1
         
@@ -371,9 +389,3 @@ def simulation(N, T, match_probs, ratio1=0.5, ratio2=0.5, initial_guess=[0.5, 0.
 # full_info=True
 # epsilon=0.1
 # record_greedy, record_opt, record_random, record_e_greedy, correct_rate_greedy, correct_rate_random, correct_rate_e_greedy = simulation(N, T, match_probs, ratio1, ratio1, initial_guess)
-# print(record_opt[-1]/N)
-
-# match_probs = [[0.8, 0.3], [0.3, 0.7]]
-# ratio1 = 0.3
-# ratio2 = 0.3
-# best_strategy(match_probs, ratio1, ratio2)
